@@ -1,3 +1,23 @@
 # forge — per-developer claude-code config (machine-local, not committed)
 .claude/settings.local.json
 .claude/commands/
+
+# macOS
+.DS_Store
+
+# secrets — never commit credentials, even in a scratch repo
+.env
+.env.*
+!.env.example
+*.pem
+
+# language/tool artifacts (per-project deps stay per-folder, never tracked)
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+dist/
+build/
+*.log
+tmp/
