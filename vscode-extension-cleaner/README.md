@@ -92,8 +92,8 @@ all-copies-in-obsolete scenarios), single-version extensions, and error cases.
 
 ## Requirements
 
-- bash 4.0+
-- `sort -V` (GNU coreutils or compatible)
+- bash 3.2+ (stock macOS `/bin/bash` works)
+- `sort -V` (stock macOS sort and GNU coreutils both qualify)
 - `python3` (for JSON parsing; optional — protection and obsolete features
   degrade gracefully if unavailable)
 - `du`, `awk` (standard POSIX utilities)

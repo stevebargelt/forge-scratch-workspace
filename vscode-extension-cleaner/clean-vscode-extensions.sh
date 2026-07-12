@@ -172,6 +172,18 @@ while IFS= read -r -d '' fullpath; do
         .*) continue ;;
     esac
 
+    # Newline in dirname poisons the line-oriented grouping temp file;
+    # tab corrupts the two-field record format.  Reject all [:cntrl:].
+    case "$dirname" in
+        *$'\n'*)
+            printf 'warning: skipping entry with control character in name\n' >&2
+            continue ;;
+    esac
+    if printf '%s' "$dirname" | LC_ALL=C grep -q '[[:cntrl:]]'; then
+        printf 'warning: skipping entry with control character in name\n' >&2
+        continue
+    fi
+
     # Skip symlinks (never follow out of target dir)
     [[ -L "$fullpath" ]] && continue
 

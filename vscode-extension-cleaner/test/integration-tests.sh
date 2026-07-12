@@ -1033,6 +1033,110 @@ else
     fail "7f: extensions.json-matched pub.ejprotected-2.0.0 survived --delete" "dir was deleted"
 fi
 
+# ══════════════════════════════════════════════════════════════════════════
+# TEST GROUP 8: Control-character dirname poisoning
+#
+# A directory whose name embeds a newline (or tab) shaped like another
+# extension record must be skipped with a warning; the victim extension
+# (sole on-disk copy) must never be listed as a candidate or deleted.
+# Reproduces the red-wide HIGH finding: the newline splits the entry across
+# lines in the grouping temp file, injecting a fake newer-version record that
+# makes the real sole copy look like an old-version deletion candidate.
+# ══════════════════════════════════════════════════════════════════════════
+echo
+echo "--- Group 8: Control-character dirname poisoning ---"
+
+# ── 8a: Embedded newline in dirname ──────────────────────────────────────
+# Poison dirname: pub.poison-1.0.0 <NL> victim.ext <TAB> victim.ext-2.0.0
+# Without the fix: this injects a fake "victim.ext  2.0.0" record into the
+# pairs file, making victim.ext-1.0.0 (sole real copy) a deletion candidate.
+CTRL_NL_DIR="$TMPDIR_BASE/ctrl_nl"
+mkdir -p "$CTRL_NL_DIR"
+make_ext "$CTRL_NL_DIR" "victim.ext-1.0.0"
+
+_poison_nl="pub.poison-1.0.0"$'\n'"victim.ext"$'\t'"victim.ext-2.0.0"
+mkdir -p "$CTRL_NL_DIR/$_poison_nl"
+echo '{"name":"poison"}' > "$CTRL_NL_DIR/$_poison_nl/package.json"
+
+set +e
+_ctrl_nl_out=$(bash "$SCRIPT" "$CTRL_NL_DIR" 2>&1)
+_ctrl_nl_exit=$?
+set -e
+
+assert_exit_code "ctrl-nl: dry-run exits 0" "0" "$_ctrl_nl_exit"
+assert_not_contains "ctrl-nl: victim.ext-1.0.0 NOT listed as candidate" \
+    "victim.ext-1.0.0" "$_ctrl_nl_out"
+if echo "$_ctrl_nl_out" | grep -qi 'warning:'; then
+    ok "ctrl-nl: warning emitted for control-character dirname"
+else
+    fail "ctrl-nl: warning emitted for control-character dirname" \
+        "no 'warning:' found in output"
+fi
+
+CTRL_NL_DELETE_DIR="$TMPDIR_BASE/ctrl_nl_delete"
+mkdir -p "$CTRL_NL_DELETE_DIR"
+make_ext "$CTRL_NL_DELETE_DIR" "victim.ext-1.0.0"
+mkdir -p "$CTRL_NL_DELETE_DIR/$_poison_nl"
+echo '{"name":"poison"}' > "$CTRL_NL_DELETE_DIR/$_poison_nl/package.json"
+
+set +e
+bash "$SCRIPT" --delete "$CTRL_NL_DELETE_DIR" > /dev/null 2>&1
+_ctrl_nl_del_exit=$?
+set -e
+
+assert_exit_code "ctrl-nl: --delete exits 0" "0" "$_ctrl_nl_del_exit"
+if [[ -d "$CTRL_NL_DELETE_DIR/victim.ext-1.0.0" ]]; then
+    ok "ctrl-nl: --delete preserved victim.ext-1.0.0 (sole copy)"
+else
+    fail "ctrl-nl: --delete preserved victim.ext-1.0.0 (sole copy)" "dir was deleted"
+fi
+
+# ── 8b: Embedded tab in dirname ──────────────────────────────────────────
+# Poison dirname: victim2.ext <TAB> victim2.ext-2.0.0
+# Without the fix: tab in the ext_id corrupts the two-field record format,
+# grouping this entry under "victim2.ext" as a fake 2.0.0 and making
+# victim2.ext-1.0.0 (sole real copy) a deletion candidate.
+CTRL_TAB_DIR="$TMPDIR_BASE/ctrl_tab"
+mkdir -p "$CTRL_TAB_DIR"
+make_ext "$CTRL_TAB_DIR" "victim2.ext-1.0.0"
+
+_poison_tab="victim2.ext"$'\t'"victim2.ext-2.0.0"
+mkdir -p "$CTRL_TAB_DIR/$_poison_tab"
+echo '{"name":"poison"}' > "$CTRL_TAB_DIR/$_poison_tab/package.json"
+
+set +e
+_ctrl_tab_out=$(bash "$SCRIPT" "$CTRL_TAB_DIR" 2>&1)
+_ctrl_tab_exit=$?
+set -e
+
+assert_exit_code "ctrl-tab: dry-run exits 0" "0" "$_ctrl_tab_exit"
+assert_not_contains "ctrl-tab: victim2.ext-1.0.0 NOT listed as candidate" \
+    "victim2.ext-1.0.0" "$_ctrl_tab_out"
+if echo "$_ctrl_tab_out" | grep -qi 'warning:'; then
+    ok "ctrl-tab: warning emitted for control-character dirname"
+else
+    fail "ctrl-tab: warning emitted for control-character dirname" \
+        "no 'warning:' found in output"
+fi
+
+CTRL_TAB_DELETE_DIR="$TMPDIR_BASE/ctrl_tab_delete"
+mkdir -p "$CTRL_TAB_DELETE_DIR"
+make_ext "$CTRL_TAB_DELETE_DIR" "victim2.ext-1.0.0"
+mkdir -p "$CTRL_TAB_DELETE_DIR/$_poison_tab"
+echo '{"name":"poison"}' > "$CTRL_TAB_DELETE_DIR/$_poison_tab/package.json"
+
+set +e
+bash "$SCRIPT" --delete "$CTRL_TAB_DELETE_DIR" > /dev/null 2>&1
+_ctrl_tab_del_exit=$?
+set -e
+
+assert_exit_code "ctrl-tab: --delete exits 0" "0" "$_ctrl_tab_del_exit"
+if [[ -d "$CTRL_TAB_DELETE_DIR/victim2.ext-1.0.0" ]]; then
+    ok "ctrl-tab: --delete preserved victim2.ext-1.0.0 (sole copy)"
+else
+    fail "ctrl-tab: --delete preserved victim2.ext-1.0.0 (sole copy)" "dir was deleted"
+fi
+
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo
 echo "Integration test results: ${PASS} passed, ${FAIL} failed"
