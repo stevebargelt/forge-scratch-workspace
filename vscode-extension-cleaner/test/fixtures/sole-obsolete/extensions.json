@@ -1,0 +1,8 @@
+[
+  {
+    "identifier": {"id": "anthropic.claude-code"},
+    "version": "2.1.207",
+    "relativeLocation": "anthropic.claude-code-2.1.207-darwin-arm64",
+    "metadata": {}
+  }
+]

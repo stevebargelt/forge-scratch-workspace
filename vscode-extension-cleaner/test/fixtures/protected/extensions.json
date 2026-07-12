@@ -1,0 +1,9 @@
+[
+  {
+    "identifier": {"id": "publisher.ext"},
+    "version": "2.0.0",
+    "location": {"$mid": 1, "path": "/extensions/publisher.ext-2.0.0"},
+    "relativeLocation": "publisher.ext-2.0.0",
+    "metadata": {}
+  }
+]
